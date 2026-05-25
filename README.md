@@ -48,9 +48,11 @@ sudo mv drift /usr/local/bin/
 System dependencies:
 
 ```sh
-brew install rclone                 # macOS
-brew install --cask macfuse         # macOS, only for mount-mode vols
-sudo apt install rclone fuse3       # Linux
+# rclone — use the upstream installer on macOS; Homebrew's rclone is
+# built without FUSE mount support, which breaks drift mount.
+curl https://rclone.org/install.sh | sudo bash       # macOS or Linux
+sudo apt install fuse3                               # Linux, only for mount-mode vols
+brew install --cask macfuse                          # macOS, only for mount-mode vols
 ```
 
 Optional shell tab-completion:
