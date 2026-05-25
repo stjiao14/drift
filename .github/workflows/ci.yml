@@ -69,11 +69,15 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: start minio
+        # Use the same root creds the integration tests hardcode (see
+        # internal/workspace/integration_test.go: minioAccessKey /
+        # minioSecretKey). Mismatch here = "access denied" on every
+        # List under .drift/ during test setup.
         run: |
           docker run -d --name minio \
             -p 9000:9000 -p 9001:9001 \
-            -e MINIO_ROOT_USER=minioadmin \
-            -e MINIO_ROOT_PASSWORD=minioadmin \
+            -e MINIO_ROOT_USER=drift-test \
+            -e MINIO_ROOT_PASSWORD=drift-test-secret \
             minio/minio:latest server /data --console-address ":9001"
           # Wait until MinIO answers its liveness endpoint. Bounded
           # retry so a stuck container fails the job rather than the
@@ -92,14 +96,9 @@ jobs:
         run: |
           curl -sSL -o /tmp/mc https://dl.min.io/client/mc/release/linux-amd64/mc
           chmod +x /tmp/mc
-          /tmp/mc alias set local http://localhost:9000 minioadmin minioadmin
+          /tmp/mc alias set local http://localhost:9000 drift-test drift-test-secret
           /tmp/mc mb local/drift-test || true
       - name: integration tests
-        env:
-          DRIFT_INTEGRATION_ENDPOINT: http://localhost:9000
-          DRIFT_INTEGRATION_BUCKET: drift-test
-          DRIFT_INTEGRATION_ACCESS_KEY: minioadmin
-          DRIFT_INTEGRATION_SECRET_KEY: minioadmin
         run: go test -tags=integration -count=1 ./...
       - name: stop minio
         if: always()
